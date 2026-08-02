@@ -1,0 +1,12 @@
+# 赛博占卜
+__pycache__/
+*.pyc
+*.pyo
+$null
+tunnel_url.txt
+start_tunnel.py
+.npm/
+node_modules/
+*.db
+*.log
+.env
