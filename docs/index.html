@@ -306,8 +306,8 @@ body {
 </div>
 
 <script>
-// API 地址——优先 localStorage，否则相对路径
-let API_BASE = localStorage.getItem('cyber_div_api') || '';
+// API 地址——优先 localStorage，否则使用默认 Render 后端
+let API_BASE = localStorage.getItem('cyber_div_api') || 'https://cyber-divination.onrender.com';
 const container = document.getElementById('mainContainer');
 const userInput = document.getElementById('userInput');
 const btnSend = document.getElementById('btnSend');
