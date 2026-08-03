@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "kb_preprocess"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from liuyao_engine import LiuYaoEngine
-from divination_prompt import SYSTEM_PROMPT, build_messages, parse_reading_sections
+from divination_prompt import SYSTEM_PROMPT, build_messages, build_followup_messages, parse_reading_sections
 
 # ==========================================
 # 配置
@@ -295,6 +295,18 @@ class DivinationResponse(BaseModel):
     sources: list[dict]
 
 
+class FollowUpRequest(BaseModel):
+    question: str
+    original_question: str
+    original_reading: str
+    pan: dict
+
+
+class FollowUpResponse(BaseModel):
+    question: str
+    reading: str
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "vectors": retriever.collection.count() if retriever else 0}
@@ -316,6 +328,28 @@ async def divination(req: DivinationRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"占卜失败: {str(e)}")
+
+
+@app.post("/api/follow-up", response_model=FollowUpResponse)
+async def follow_up(req: FollowUpRequest):
+    """追问接口：基于已有的占卜结果进行深入提问"""
+    followup_question = req.question.strip()
+    if not followup_question:
+        raise HTTPException(status_code=400, detail="请输入你想追问的问题")
+    if len(followup_question) > 300:
+        raise HTTPException(status_code=400, detail="追问问题太长，300字以内")
+    
+    try:
+        messages = build_followup_messages(
+            original_question=req.original_question,
+            original_reading=req.original_reading,
+            followup_question=followup_question,
+            pan=req.pan,
+        )
+        reading = call_llm(messages)
+        return {"question": followup_question, "reading": reading}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"追问失败: {str(e)}")
 
 
 # ==========================================
