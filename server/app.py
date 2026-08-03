@@ -4,8 +4,9 @@
 """
 import os
 import sys
-import chromadb
-from typing import Optional
+import json
+import numpy as np
+from typing import Optional, List, Dict, Any, Union
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -18,12 +19,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "kb_preprocess"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from liuyao_engine import LiuYaoEngine
-from divination_prompt import SYSTEM_PROMPT, build_messages, build_followup_messages, parse_reading_sections
+from divination_prompt import SYSTEM_PROMPT, build_messages, build_followup_messages
 
 # ==========================================
 # 配置
 # ==========================================
-DB_PATH = os.environ.get("VECTORDB_PATH", os.path.join(os.path.dirname(__file__), "..", "kb_preprocess", "vectordb"))
+KB_DIR = os.path.join(os.path.dirname(__file__), "..", "kb_preprocess")
+OUTPUT_DIR = os.path.join(KB_DIR, "output")
+EMBEDDINGS_PATH = os.environ.get("EMBEDDINGS_PATH", os.path.join(OUTPUT_DIR, "embeddings.npy"))
+VECTORS_PATH = os.environ.get("VECTORS_PATH", os.path.join(OUTPUT_DIR, "vectors.json"))
 LLM_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")  # 通过环境变量设置
 LLM_API_URL = "https://api.deepseek.com/v1/chat/completions"
 LLM_MODEL = "deepseek-chat"  # DeepSeek-V3
@@ -48,55 +52,75 @@ def cast_hexagram_full():
 # ==========================================
 
 class RAGRetriever:
-    """向量检索器"""
-    
-    def __init__(self, db_path: str):
-        self.client = chromadb.PersistentClient(path=db_path)
-        self.collection = self.client.get_collection("liuyao_knowledge")
-    
+    """基于 numpy 的本地向量检索器（无需 ChromaDB）"""
+
+    def __init__(self, embeddings_path: str, vectors_path: str):
+        print(f"[RAG] 加载向量文件...")
+        self.embeddings = np.load(embeddings_path).astype("float32")
+        # 预归一化，用点积等价计算余弦相似度
+        norms = np.linalg.norm(self.embeddings, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        self.embeddings_norm = self.embeddings / norms
+        print(f"[RAG] 向量矩阵: {self.embeddings.shape}")
+
+        with open(vectors_path, "r", encoding="utf-8") as f:
+            self.records = json.load(f)
+        print(f"[RAG] 记录数: {len(self.records)}")
+
+        # 复用步骤3的 embedding 函数，保证查询与入库模型一致
+        from step3_vectorize import get_embedding_fn
+        self.embedding_fn, self.fn_type = get_embedding_fn()
+        print(f"[RAG] Embedding 模型: {self.fn_type}")
+
+    def _encode(self, texts: List[str]) -> np.ndarray:
+        embs = np.array(self.embedding_fn(texts), dtype="float32")
+        norms = np.linalg.norm(embs, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        return embs / norms
+
+    def _search_once(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """单次语义检索"""
+        query_emb = self._encode([query])  # (1, dim)
+        scores = np.dot(query_emb, self.embeddings_norm.T)[0]  # (n,)
+
+        k = min(top_k, len(self.records))
+        top_idx = np.argsort(scores)[::-1][:k]
+
+        return [
+            {
+                "id": self.records[i]["id"],
+                "text": self.records[i]["text"],
+                "meta": self.records[i]["meta"],
+                "score": max(0.0, min(1.0, round(float(scores[i]), 4))),
+            }
+            for i in top_idx
+        ]
+
     def search(self, query: str, hexagram: Optional[str] = None, top_k: int = 5) -> list[dict]:
         """检索相关古籍内容
-        
+
         Args:
             query: 检索查询词
             hexagram: 可选，追加卦名精确匹配
             top_k: 返回条数上限
         """
         # 语义检索
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=top_k,
-        )
-        
-        items = []
-        for i in range(len(results["ids"][0])):
-            items.append({
-                "id": results["ids"][0][i],
-                "text": results["documents"][0][i],
-                "meta": results["metadatas"][0][i],
-                "score": max(0, min(1, round(1 - results["distances"][0][i], 4))),  # 距离转相似度，截断在 [0,1]
-            })
-        
+        items = self._search_once(query, top_k=top_k)
+
         # 如果有卦名，追加精确匹配（去重）
         if hexagram:
-            hex_results = self.collection.query(
-                query_texts=[hexagram],
-                n_results=3,
-            )
+            hex_items = self._search_once(hexagram, top_k=3)
             existing_ids = {item["id"] for item in items}
-            for i in range(len(hex_results["ids"][0])):
-                hid = hex_results["ids"][0][i]
-                if hid not in existing_ids:
-                    items.append({
-                        "id": hid,
-                        "text": hex_results["documents"][0][i],
-                        "meta": hex_results["metadatas"][0][i],
-                        "score": max(0, min(1, round(1 - hex_results["distances"][0][i], 4))),
-                    })
-        
+            for item in hex_items:
+                if item["id"] not in existing_ids:
+                    items.append(item)
+
         # 按分数排序
         items.sort(key=lambda x: -x["score"])
         return items[:top_k]
+
+    def count(self) -> int:
+        return len(self.records)
 
 
 # ==========================================
@@ -125,7 +149,9 @@ def call_llm(messages: list[dict]) -> str:
     resp = requests.post(LLM_API_URL, json=payload, headers=headers, timeout=30)
     
     if resp.status_code != 200:
-        raise Exception(f"LLM API 错误 [{resp.status_code}]: {resp.text}")
+        # 不暴露原始API错误详情给用户，避免泄漏密钥等敏感信息
+        error_text = resp.text[:200] if resp.text else "无详情"
+        raise Exception(f"LLM API 错误 [{resp.status_code}]，请稍后重试")
     
     return resp.json()["choices"][0]["message"]["content"]
 
@@ -226,12 +252,14 @@ retriever: Optional[RAGRetriever] = None
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时加载向量库"""
     global retriever
-    if not os.path.exists(DB_PATH):
-        print(f"[ERROR] 向量数据库未构建: {DB_PATH}")
+    if not os.path.exists(EMBEDDINGS_PATH) or not os.path.exists(VECTORS_PATH):
+        print(f"[ERROR] 向量文件未找到:")
+        print(f"  embeddings: {EMBEDDINGS_PATH}")
+        print(f"  vectors:    {VECTORS_PATH}")
         print("请先运行: python kb_preprocess/step3_vectorize.py")
     else:
-        retriever = RAGRetriever(DB_PATH)
-        print(f"[OK] 向量库已加载: {retriever.collection.count()} 条")
+        retriever = RAGRetriever(EMBEDDINGS_PATH, VECTORS_PATH)
+        print(f"[OK] 向量库已加载: {retriever.count()} 条")
     yield
 
 
@@ -242,38 +270,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — 允许 GitHub Pages 等任意来源
-from fastapi.middleware.cors import CORSMiddleware
-
+# CORS — 允许任意来源（后续可改为具体域名以增强安全性）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=86400,
+    allow_credentials=False,
 )
-
-# 备选：强制给所有响应添加 CORS 头（处理异常响应时 CORSMiddleware 不生效的情况）
-from starlette.middleware.base import BaseHTTPMiddleware
-
-class ForceCORSHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        if request.method == "OPTIONS":
-            from fastapi.responses import Response
-            resp = Response()
-            resp.headers["Access-Control-Allow-Origin"] = "*"
-            resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
-            resp.headers["Access-Control-Allow-Headers"] = "*"
-            resp.headers["Access-Control-Max-Age"] = "86400"
-            return resp
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
-
-app.add_middleware(ForceCORSHeadersMiddleware)
 
 
 # ==========================================
@@ -313,7 +317,7 @@ class FollowUpResponse(BaseModel):
 async def health():
     return {
         "status": "ok",
-        "vectors": retriever.collection.count() if retriever else 0,
+        "vectors": retriever.count() if retriever else 0,
         "llm_configured": bool(LLM_API_KEY),
     }
 
@@ -333,7 +337,11 @@ async def divination(req: DivinationRequest):
         result = do_divination(question, retriever)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"占卜失败: {str(e)}")
+        # 不泄露内部错误细节给客户端
+        import traceback
+        print(f"[ERROR] 占卜失败: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="占卜失败，服务内部错误，请稍后重试")
 
 
 @app.post("/api/follow-up", response_model=FollowUpResponse)
@@ -355,7 +363,8 @@ async def follow_up(req: FollowUpRequest):
         reading = call_llm(messages)
         return {"question": followup_question, "reading": reading}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"追问失败: {str(e)}")
+        print(f"[ERROR] 追问失败: {e}")
+        raise HTTPException(status_code=500, detail="追问失败，服务内部错误，请稍后重试")
 
 
 # ==========================================
@@ -365,7 +374,8 @@ if __name__ == "__main__":
     import uvicorn
     print("=" * 50)
     print("  赛博占卜 API 服务启动中...")
-    print(f"  向量库: {DB_PATH}")
+    print(f"  向量文件: {EMBEDDINGS_PATH}")
+    print(f"  元数据:   {VECTORS_PATH}")
     print(f"  LLM: {LLM_MODEL}")
     print("=" * 50)
     uvicorn.run(app, host="0.0.0.0", port=8000)
