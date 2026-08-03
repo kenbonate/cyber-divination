@@ -1,0 +1,2 @@
+kb_preprocess/output/*.npy filter=lfs diff=lfs merge=lfs -text
+kb_preprocess/output/*.json filter=lfs diff=lfs merge=lfs -text
