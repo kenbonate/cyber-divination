@@ -8,5 +8,7 @@ start_tunnel.py
 .npm/
 node_modules/
 *.db
+*.sqlite3
 *.log
 .env
+.idea/

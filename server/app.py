@@ -18,6 +18,12 @@ from pydantic import BaseModel
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "kb_preprocess"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+except ImportError:
+    pass
+
 from liuyao_engine import LiuYaoEngine
 from divination_prompt import SYSTEM_PROMPT, build_messages, build_followup_messages
 
@@ -32,10 +38,10 @@ LLM_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")  # 通过环境变量设置
 LLM_API_URL = "https://api.deepseek.com/v1/chat/completions"
 LLM_MODEL = "deepseek-chat"  # DeepSeek-V3
 
-# 备用：阿里云百炼
-# LLM_API_KEY = os.environ.get("ALIYUN_API_KEY", "sk-ws-H.EHPIPHM...")
-# LLM_API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-# LLM_MODEL = "qwen-plus"
+# 备用：阿里云百炼（取消注释并设置环境变量 ALIYUN_API_KEY 即可切换）
+# ALIYUN_API_KEY = os.environ.get("ALIYUN_API_KEY", "")
+# ALIYUN_API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+# ALIYUN_MODEL = "qwen-plus"
 
 # ==========================================
 # 六爻排盘（使用 liuyao_engine）
@@ -101,22 +107,33 @@ class RAGRetriever:
 
         Args:
             query: 检索查询词
-            hexagram: 可选，追加卦名精确匹配
+            hexagram: 可选，按元数据中的卦名追加精确匹配
             top_k: 返回条数上限
         """
         # 语义检索
         items = self._search_once(query, top_k=top_k)
 
-        # 如果有卦名，追加精确匹配（去重）
+        # 如果有卦名，追加按元数据过滤的精确匹配（去重）
         if hexagram:
-            hex_items = self._search_once(hexagram, top_k=3)
-            existing_ids = {item["id"] for item in items}
-            for item in hex_items:
-                if item["id"] not in existing_ids:
-                    items.append(item)
-
-        # 按分数排序
-        items.sort(key=lambda x: -x["score"])
+            query_emb = self._encode([hexagram])[0]
+            scores = np.dot(query_emb, self.embeddings_norm.T)
+            exact_items = []
+            for i, record in enumerate(self.records):
+                if hexagram in record["meta"].get("hexagram", ""):
+                    exact_items.append({
+                        "id": record["id"],
+                        "text": record["text"],
+                        "meta": record["meta"],
+                        "score": max(0.0, min(1.0, round(float(scores[i]), 4))),
+                    })
+            exact_ids = {item["id"] for item in exact_items}
+            semantic_items = [item for item in items if item["id"] not in exact_ids]
+            exact_items.sort(key=lambda x: -x["score"])
+            semantic_items.sort(key=lambda x: -x["score"])
+            items = exact_items + semantic_items
+        else:
+            # 按分数排序
+            items.sort(key=lambda x: -x["score"])
         return items[:top_k]
 
     def count(self) -> int:
@@ -173,12 +190,12 @@ def do_divination(question: str, retriever: RAGRetriever) -> dict:
     sources_semantic = retriever.search(search_query, top_k=4)
     
     # 2b. 卦名精确匹配：本卦名
-    sources_ben_gua = retriever.search(ben_gua, top_k=3)
+    sources_ben_gua = retriever.search(ben_gua, hexagram=ben_gua, top_k=3)
     
     # 2c. 如果有变卦，也检索变卦
     sources_bian_gua = []
     if bian_gua:
-        sources_bian_gua = retriever.search(bian_gua, top_k=2)
+        sources_bian_gua = retriever.search(bian_gua, hexagram=bian_gua, top_k=2)
     
     # 2d. 相似情形检索：纯用问题做一次语义检索（找同类型问事场景的古人案例）
     sources_similar = retriever.search(question, top_k=3)

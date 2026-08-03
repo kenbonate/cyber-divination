@@ -1,10 +1,9 @@
 """
 六爻排盘引擎
-包含：四柱计算、神煞、时间起卦、纳甲、六亲、六神、世应、空亡
+包含：四柱计算、神煞、铜钱摇卦起卦、纳甲、六亲、六神、世应、空亡
 """
-import math
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 
 # ==========================================
@@ -45,7 +44,7 @@ GUA_SYMBOLS = {
     "巽": "110", "坎": "010", "艮": "100", "坤": "000",
 }
 
-# 六十四卦：key 是从下到上六个爻的二进制字符串
+# 六十四卦：key 是上卦3位+下卦3位；每卦3位均按自下而上排列，1=阳爻, 0=阴爻
 HEXAGRAM_MAP = {
     "111111": "乾为天", "000000": "坤为地", "010001": "水雷屯", "100010": "山水蒙",
     "010111": "水天需", "111010": "天水讼", "000010": "地水师", "010000": "水地比",
@@ -53,45 +52,46 @@ HEXAGRAM_MAP = {
     "111101": "天火同人", "101111": "火天大有", "000100": "地山谦", "001000": "雷地豫",
     "011001": "泽雷随", "100110": "山风蛊", "000011": "地泽临", "110000": "风地观",
     "101001": "火雷噬嗑", "100101": "山火贲", "100000": "山地剥", "000001": "地雷复",
-    "100111": "天雷无妄", "111100": "山天大畜", "100001": "山雷颐", "011110": "泽风大过",
-    "010010": "坎为水", "101101": "离为火",
-    "001110": "泽山咸", "011100": "雷风恒", "001111": "雷天大壮", "000101": "地火明夷",
+    "100111": "山天大畜", "111100": "天山遁", "111001": "天雷无妄", "100001": "山雷颐",
+    "011110": "泽风大过", "010010": "坎为水", "101101": "离为火",
+    "011100": "泽山咸", "001110": "雷风恒", "001111": "雷天大壮", "000101": "地火明夷",
     "101000": "火地晋", "110101": "风火家人", "101011": "火泽睽", "010100": "水山蹇",
     "001010": "雷水解", "100011": "山泽损", "110001": "风雷益", "011111": "泽天夬",
     "111110": "天风姤", "011000": "泽地萃", "000110": "地风升", "011010": "泽水困",
     "010110": "水风井", "011101": "泽火革", "101110": "火风鼎", "001001": "震为雷",
     "100100": "艮为山", "110100": "风山渐", "001011": "雷泽归妹", "001101": "雷火丰",
-    "101100": "火山旅", "110110": "巽为风", "011011": "兑为泽", "010011": "风水涣",
-    "110010": "水泽节", "110011": "风泽中孚", "001100": "雷山小过", "010101": "水火既济",
+    "101100": "火山旅", "110110": "巽为风", "011011": "兑为泽", "010011": "水泽节",
+    "110010": "风水涣", "110011": "风泽中孚", "001100": "雷山小过", "010101": "水火既济",
     "101010": "火水未济",
 }
 
-# 八宫卦序（一世到归魂）
+# 八宫卦序（本宫→一世→二世→三世→四世→五世→游魂→归魂）
+# 每个宫8卦，共64卦。编码：上卦3位+下卦3位，每卦3位均按自下而上排列
 PALACE_ORDER = [
-    # 乾宫（金）
+    # 乾宫（金）: 本宫乾→姤→遁→否→观→剥→晋→大有(归魂)
     ("111111", "乾为天"), ("111110", "天风姤"), ("111100", "天山遁"), ("111000", "天地否"),
     ("110000", "风地观"), ("100000", "山地剥"), ("101000", "火地晋"), ("101111", "火天大有"),
-    # 震宫（木）
-    ("001001", "震为雷"), ("001000", "雷地豫"), ("001100", "雷水解"), ("000100", "地水师"),
-    ("010100", "水山蹇"), ("011100", "雷风恒"), ("010000", "水地比"), ("010011", "风水涣"),
-    # 坎宫（水）
-    ("010010", "坎为水"), ("010011", "水泽节"), ("010111", "水天需"), ("011111", "泽天夬"),
-    ("011011", "兑为泽"), ("010110", "水风井"), ("000110", "地风升"), ("000010", "地水师"),
-    # 艮宫（土）
-    ("100100", "艮为山"), ("100101", "山火贲"), ("100111", "天雷无妄"), ("101111", "火天大有"),
-    ("101101", "离为火"), ("100001", "山雷颐"), ("100011", "山泽损"), ("100000", "山地剥"),
-    # 坤宫（土）
-    ("000000", "坤为地"), ("000001", "地雷复"), ("000011", "地泽临"), ("000111", "地天泰"),
-    ("001111", "雷天大壮"), ("001101", "雷火丰"), ("001100", "雷山小过"), ("001000", "雷地豫"),
-    # 巽宫（木）
+    # 坎宫（水）: 本宫坎→节→屯→既济→革→丰→明夷→师(归魂)
+    ("010010", "坎为水"), ("010011", "水泽节"), ("010001", "水雷屯"), ("010101", "水火既济"),
+    ("011101", "泽火革"), ("001101", "雷火丰"), ("000101", "地火明夷"), ("000010", "地水师"),
+    # 艮宫（土）: 本宫艮→贲→大畜→损→睽→履→中孚→渐(归魂)
+    ("100100", "艮为山"), ("100101", "山火贲"), ("100111", "山天大畜"), ("100011", "山泽损"),
+    ("101011", "火泽睽"), ("111011", "天泽履"), ("110011", "风泽中孚"), ("110100", "风山渐"),
+    # 震宫（木）: 本宫震→豫→解→恒→升→井→大过→随(归魂)
+    ("001001", "震为雷"), ("001000", "雷地豫"), ("001010", "雷水解"), ("001110", "雷风恒"),
+    ("000110", "地风升"), ("010110", "水风井"), ("011110", "泽风大过"), ("011001", "泽雷随"),
+    # 巽宫（木）: 本宫巽→小畜→家人→益→无妄→噬嗑→颐→蛊(归魂)
     ("110110", "巽为风"), ("110111", "风天小畜"), ("110101", "风火家人"), ("110001", "风雷益"),
-    ("100001", "山雷颐"), ("100011", "山泽损"), ("100010", "山水蒙"), ("110010", "水泽节"),
-    # 离宫（火）
-    ("101101", "离为火"), ("101100", "火山旅"), ("101000", "火地晋"), ("101001", "火雷噬嗑"),
-    ("100001", "山雷颐"), ("100101", "山火贲"), ("100100", "艮为山"), ("101111", "火天大有"),
-    # 兑宫（金）
-    ("011011", "兑为泽"), ("011010", "泽水困"), ("011000", "泽地萃"), ("011001", "泽雷随"),
-    ("001001", "震为雷"), ("001011", "雷泽归妹"), ("001010", "雷水解"), ("011110", "泽风大过"),
+    ("111001", "天雷无妄"), ("101001", "火雷噬嗑"), ("100001", "山雷颐"), ("100110", "山风蛊"),
+    # 离宫（火）: 本宫离→旅→鼎→未济→蒙→涣→讼→同人(归魂)
+    ("101101", "离为火"), ("101100", "火山旅"), ("101110", "火风鼎"), ("101010", "火水未济"),
+    ("100010", "山水蒙"), ("110010", "风水涣"), ("111010", "天水讼"), ("111101", "天火同人"),
+    # 坤宫（土）: 本宫坤→复→临→泰→大壮→夬→需→比(归魂)
+    ("000000", "坤为地"), ("000001", "地雷复"), ("000011", "地泽临"), ("000111", "地天泰"),
+    ("001111", "雷天大壮"), ("011111", "泽天夬"), ("010111", "水天需"), ("010000", "水地比"),
+    # 兑宫（金）: 本宫兑→困→萃→咸→蹇→谦→小过→归妹(归魂)
+    ("011011", "兑为泽"), ("011010", "泽水困"), ("011000", "泽地萃"), ("011100", "泽山咸"),
+    ("010100", "水山蹇"), ("000100", "地山谦"), ("001100", "雷山小过"), ("001011", "雷泽归妹"),
 ]
 
 # 八宫五行
@@ -175,30 +175,25 @@ def get_year_ganzhi(year: int) -> str:
     return get_ganzhi(offset)
 
 
-def get_month_ganzhi(year_gan: str, month: int) -> str:
-    """月柱（按节气后的月份）"""
+def get_month_ganzhi(year_gan: str, yuejian_zhi: str) -> str:
+    """月柱（按节气后的月支推算）"""
     # 年干定月干
     gan_index = TIANGAN.index(year_gan)
     # 甲己之年丙作首，乙庚之岁戊为头...
     start_gan_map = {0: 2, 1: 4, 2: 6, 3: 8, 4: 0, 5: 2, 6: 4, 7: 6, 8: 8, 9: 0}
     start_gan = start_gan_map[gan_index]
-    # 正月从寅开始
-    zhi = DIZHI[(month + 1) % 12]  # 正月=寅
-    gan = TIANGAN[(start_gan + month - 1) % 10]
-    return gan + zhi
+    # 寅月为正月
+    month_num = (DIZHI.index(yuejian_zhi) - 2) % 12 + 1
+    gan = TIANGAN[(start_gan + month_num - 1) % 10]
+    return gan + yuejian_zhi
 
 
 def get_day_ganzhi(timestamp: datetime) -> str:
-    """日柱（简化版，基于已知基准日计算）"""
-    # 基准：2024年1月1日是甲子日（实际需精确校准）
-    base = datetime(2024, 1, 1)
+    """日柱（基于已知基准日计算）"""
+    # 2000-01-01 是戊午日，甲子偏移为 54
+    base = datetime(2000, 1, 1)
     days_diff = (timestamp - base).days
-    # 实际上 2024-01-01 是癸亥日，需要调整
-    # 使用更精确的基准
-    # 2000-01-01 是戊午日
-    base2 = datetime(2000, 1, 1)
-    days_diff2 = (timestamp - base2).days
-    offset = (14 + days_diff2) % 60  # 戊午偏移
+    offset = (54 + days_diff) % 60
     return get_ganzhi(offset)
 
 
@@ -470,29 +465,32 @@ def calc_shensha(year_gz: str, day_gz: str, yuejian: str) -> dict:
 class LiuYaoEngine:
     """六爻排盘引擎"""
     
-    def __init__(self, dt: Optional[datetime] = None, method: str = "time"):
+    def __init__(self, dt: Optional[datetime] = None):
         """
-        dt: 占卜时间，None 表示当前时间
-        method: 起卦方法，time=时间起卦法
+        dt: 占卜时间点（用于八字/节气推算），None 表示当前时间
+        起卦始终使用铜钱摇卦法（随机模拟三枚铜钱摇六次）
         """
         self.dt = dt or datetime.now()
-        self.method = method
-        
-        # 计算四柱
-        self._calc_sizhu()
+
         # 计算节气
         self._calc_jieqi()
+        # 计算四柱（月柱依赖节气月建）
+        self._calc_sizhu()
         # 计算神煞
         self._calc_shensha()
-        # 起卦
+        # 起卦（_cast_gua 内部重置 self.lines）
         self._cast_gua()
         # 排盘
         self._arrange_pan()
     
     def _calc_sizhu(self):
         """计算四柱"""
-        self.year_gz = get_year_ganzhi(self.dt.year)
-        self.month_gz = get_month_ganzhi(self.year_gz[0], self.dt.month)
+        # 立春前仍属上一年
+        effective_year = self.dt.year
+        if self.dt.month < 2 or (self.dt.month == 2 and self.dt.day < 3):
+            effective_year -= 1
+        self.year_gz = get_year_ganzhi(effective_year)
+        self.month_gz = get_month_ganzhi(self.year_gz[0], self.yuejian)
         self.day_gz = get_day_ganzhi(self.dt)
         
         # 时柱
@@ -543,72 +541,83 @@ class LiuYaoEngine:
         self.shensha = calc_shensha(self.year_gz, self.day_gz, self.yuejian)
     
     def _cast_gua(self):
-        """时间起卦法"""
-        year = self.dt.year
-        month = self.dt.month
-        day = self.dt.day
-        hour = self.dt.hour
+        """铜钱摇卦法：模拟三枚铜钱摇六次，每次独立生成爻象
         
-        # 时间起卦：年+月+日为上卦，年+月+日+时为下卦
-        # 上卦数
-        shang_num = (year + month + day) % 8
-        if shang_num == 0:
-            shang_num = 8
-        
-        # 下卦数
-        xia_num = (year + month + day + hour) % 8
-        if xia_num == 0:
-            xia_num = 8
-        
-        # 动爻
-        dong_num = (year + month + day + hour) % 6
-        if dong_num == 0:
-            dong_num = 6
-        
-        # 八卦顺序：乾1、兑2、离3、震4、巽5、坎6、艮7、坤8
-        bagua_order = ["乾", "兑", "离", "震", "巽", "坎", "艮", "坤"]
-        shang_gua = bagua_order[shang_num - 1]
-        xia_gua = bagua_order[xia_num - 1]
-        
-        self.shang_gua = shang_gua
-        self.xia_gua = xia_gua
-        self.dong_yao = dong_num  # 1-6，从下到上
-        
-        # 组合六爻
-        shang_symbol = GUA_SYMBOLS[shang_gua]  # 上卦，从上到下
-        xia_symbol = GUA_SYMBOLS[xia_gua]       # 下卦，从上到下
-        
-        # HEXAGRAM_MAP 编码：从上到下，shang + xia
-        self.gua_code = shang_symbol + xia_symbol
-        self.ben_gua_name = HEXAGRAM_MAP.get(self.gua_code, "未知")
-        
-        # 解析六爻（从下到上）
-        bottom_up = self.gua_code[::-1]  # 反转：从下到上
+        铜钱：0=字(阴面), 1=背(阳面)
+        三枚之和: 0→老阴×, 1→少阳━━━, 2→少阴━ ━, 3→老阳○
+        """
+        # 每次起卦重新初始化，确保无状态残留
         self.lines = []
+        bottom_up = ""
+
         for i in range(6):
-            pos = i + 1
-            value = int(bottom_up[i])
-            is_changing = (pos == self.dong_yao)
+            pos = i + 1  # 1-based，从下到上（初爻=第1次）
+
+            coins = [random.randint(0, 1) for _ in range(3)]
+            coin_sum = sum(coins)
+
+            if coin_sum == 0:
+                # 三枚全字（0背）→ 老阴：阴爻变阳爻
+                value = 0
+                changing = True
+                coin_name = "老阴 ×"
+            elif coin_sum == 1:
+                # 两字一背（1背）→ 少阳：阳爻静爻
+                value = 1
+                changing = False
+                coin_name = "少阳"
+            elif coin_sum == 2:
+                # 两背一字（2背）→ 少阴：阴爻静爻
+                value = 0
+                changing = False
+                coin_name = "少阴"
+            else:
+                # 三枚全背（3背）→ 老阳：阳爻变阴爻
+                value = 1
+                changing = True
+                coin_name = "老阳 ○"
+
+            bottom_up += str(value)
+
             self.lines.append({
                 "position": pos,
                 "value": value,
-                "changing": is_changing,
+                "changing": changing,
+                "coin_result": coin_name,
             })
-        
-        # 变卦
+
+        # 卦码：上卦3位（四五六爻）+ 下卦3位（一二三爻），每卦均按自下而上排列
+        self.gua_code = bottom_up[3:] + bottom_up[:3]
+        self.ben_gua_name = HEXAGRAM_MAP.get(self.gua_code, "未知")
+
+        # 从六爻码反推上下卦
+        symbol_to_gua = {v: k for k, v in GUA_SYMBOLS.items()}
+        self.shang_gua = symbol_to_gua.get(self.gua_code[:3], "?")
+        self.xia_gua = symbol_to_gua.get(self.gua_code[3:], "?")
+
+        # 动爻列表（铜钱法可能多个动爻，也可能静卦）
+        self.dong_yao_list = [i + 1 for i in range(6) if self.lines[i]["changing"]]
+        self.dong_yao = self.dong_yao_list[0] if self.dong_yao_list else 0
+
+        # 变卦：翻转所有动爻的阴阳
         bian_bottom_up = "".join(
-            str(1 - l["value"] if l["changing"] else l["value"])
-            for l in self.lines
+            str(1 - self.lines[i]["value"]) if self.lines[i]["changing"]
+            else str(self.lines[i]["value"])
+            for i in range(6)
         )
-        self.bian_code = bian_bottom_up[::-1]  # 转为从上到下
+        self.bian_code = bian_bottom_up[3:] + bian_bottom_up[:3]
         self.bian_gua_name = HEXAGRAM_MAP.get(self.bian_code)
+        # 静卦时无变卦
+        if not self.dong_yao_list:
+            self.bian_code = ""
+            self.bian_gua_name = None
     
     def _calc_bian_details(self) -> list:
         """计算变卦六爻详情：干支、五行、六亲"""
         if not self.bian_code:
             return []
         
-        # 变卦上下卦（从上到下，前三为上卦，后三为下卦）
+        # 变卦上下卦（上卦3位 + 下卦3位，每卦均按自下而上）
         bian_shang = self.bian_code[:3]
         bian_xia = self.bian_code[3:]
         bian_shang_gua = {v: k for k, v in GUA_SYMBOLS.items()}.get(bian_shang, "?")
@@ -656,9 +665,20 @@ class LiuYaoEngine:
         self._calc_xunkong()
     
     def _find_palace(self) -> tuple:
-        """确定卦宫：八纯卦直接返回，其余用上卦"""
-        if self.shang_gua == self.xia_gua:
-            return self.shang_gua, PALACE_WX[self.shang_gua]
+        """确定卦宫：在八宫卦序 PALACE_ORDER 中查找本卦所属宫位
+
+        每宫8卦，找到本卦后根据索引确定所属宫：
+        - idx // 8 = 宫索引
+        - 该宫第一个卦（索引 0）的本宫卦名首字即宫名
+        """
+        for idx, (code, name) in enumerate(PALACE_ORDER):
+            if code == self.gua_code:
+                palace_idx = idx // 8
+                # 取该宫第一个卦（本宫卦）的卦名，首字即宫名
+                palace_hex_name = PALACE_ORDER[palace_idx * 8][1]
+                palace_name = palace_hex_name[0]  # e.g. "乾为天" → "乾"
+                return palace_name, PALACE_WX.get(palace_name, "土")
+        # 降级：未找到时用上卦（保留兼容）
         return self.shang_gua, PALACE_WX.get(self.shang_gua, "土")
     
     def _na_jia(self):
@@ -696,17 +716,29 @@ class LiuYaoEngine:
             line["liushen"] = LIUSHEN_ORDER[shen_idx]
     
     def _ding_shiying(self):
-        """定世应：简化版"""
-        if self.shang_gua == self.xia_gua:
-            shi_pos, ying_pos = 6, 3
+        """定世应：在八宫卦序中查找本卦位置，按世爻规则定位
+
+        八宫卦序每个卦在宫内的位置决定了世爻：
+        本宫(0)→世6爻, 一世(1)→世1爻, 二世(2)→世2爻, 三世(3)→世3爻,
+        四世(4)→世4爻, 五世(5)→世5爻, 游魂(6)→世4爻, 归魂(7)→世3爻
+        应爻始终与世爻隔两爻：1↔4, 2↔5, 3↔6
+        """
+        # 应爻位置表：世爻→应爻
+        ying_map = {1: 4, 2: 5, 3: 6, 4: 1, 5: 2, 6: 3}
+
+        for idx, (code, name) in enumerate(PALACE_ORDER):
+            if code == self.gua_code:
+                pos_in_palace = idx % 8  # 0=本宫, 1=一世, ..., 7=归魂
+                shi_pos = SHI_YAO_POS[pos_in_palace]
+                ying_pos = ying_map[shi_pos]
+                break
         else:
-            # 根据动爻位置估算（简化）
-            shi_pos = self.dong_yao
-            ying_pos = ((shi_pos + 2) % 6) or 6
-        
+            # 降级：未找到时默认世在三爻
+            shi_pos, ying_pos = 3, 6
+
         self.shi_yao = shi_pos
         self.ying_yao = ying_pos
-        
+
         for line in self.lines:
             line["is_shi"] = (line["position"] == shi_pos)
             line["is_ying"] = (line["position"] == ying_pos)
@@ -775,6 +807,7 @@ class LiuYaoEngine:
                     "lines": self._calc_bian_details(),
                 } if self.bian_gua_name else None,
                 "dong_yao": self.dong_yao,
+                "dong_yao_list": self.dong_yao_list,
             },
             "lines": self.lines,
             "xunkong": {
@@ -807,7 +840,8 @@ if __name__ == "__main__":
     if result['gua']['bian']:
         print(f"变卦：{result['gua']['bian']['name']}")
     print(f"世爻：第{result['gua']['ben']['shi_yao']}爻，应爻：第{result['gua']['ben']['ying_yao']}爻")
-    print(f"动爻：第{result['gua']['dong_yao']}爻")
+    dong_desc = "、".join(f"第{x}爻" for x in result['gua']['dong_yao_list']) or "无动爻"
+    print(f"动爻：{dong_desc}")
     print("\n六爻排盘：")
     for line in reversed(result['lines']):
         yao_type = "━━━" if line['value'] == 1 else "━ ━"

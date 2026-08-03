@@ -297,6 +297,296 @@ body {
   color: var(--text-dim);
 }
 
+/* ========== 可视化排盘卡片 ========== */
+.paipan-card {
+  background: #FFFCF8;
+  border-radius: 10px;
+  margin: 6px 0 14px;
+  border: 1px solid #F0E4D4;
+  overflow: hidden;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  box-shadow: 0 1px 4px rgba(180, 100, 50, 0.05);
+}
+
+/* 顶部时间栏 */
+.paipan-time {
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #FFF5F0 0%, #FFE8DC 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #F5E8D8;
+  font-size: 12px;
+}
+.paipan-time .solar {
+  font-weight: 600;
+  color: #5D4037;
+  font-size: 13px;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.paipan-time .lunar {
+  color: #8D6E63;
+  font-size: 12px;
+}
+.paipan-time .jieqi {
+  background: #C41E3A;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+/* 四柱 */
+.paipan-sizhu {
+  padding: 14px 12px 12px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-bottom: 1px solid #F5E8D8;
+  background: #FFFCF8;
+}
+.sizhu-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.sizhu-cell .ganzhi-pair {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  font-family: "STKaiti", "KaiTi", "STSong", serif;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 600;
+}
+.sizhu-cell .gan {
+  /* 颜色由 .gan-xxx 提供 */
+}
+.sizhu-cell .zhi {
+  color: #3E2723;
+}
+.sizhu-cell .label {
+  font-size: 10px;
+  color: #A1887F;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* 天干五行色 */
+.gan-木 { color: #2E7D32; }
+.gan-火 { color: #C62828; }
+.gan-土 { color: #B8860B; }
+.gan-金 { color: #616161; }
+.gan-水 { color: #1565C0; }
+
+/* 日空/时空/月建 */
+.paipan-xunkong {
+  padding: 7px 14px;
+  background: #FAF6F0;
+  display: flex;
+  justify-content: space-around;
+  font-size: 11px;
+  color: #6D4C41;
+  border-bottom: 1px solid #F5E8D8;
+}
+.paipan-xunkong .xk-item .label {
+  color: #A1887F;
+  margin-right: 4px;
+}
+.paipan-xunkong .xk-item .value {
+  font-weight: 600;
+  color: #C62828;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+
+/* 神煞 */
+.paipan-shensha {
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px 8px;
+  border-bottom: 1px solid #F5E8D8;
+  background: #FFF;
+}
+.shensha-item {
+  font-size: 11px;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  white-space: nowrap;
+}
+.shensha-item .shensha-label {
+  color: #999;
+}
+.shensha-item .shensha-value {
+  font-weight: 600;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.shensha-青龙 { color: #2E7D32; }
+.shensha-朱雀 { color: #C62828; }
+.shensha-勾陈 { color: #B8860B; }
+.shensha-螣蛇 { color: #E65100; }
+.shensha-白虎 { color: #757575; }
+.shensha-玄武 { color: #1565C0; }
+
+/* 本卦/变卦 信息条 */
+.paipan-gua-bar {
+  padding: 12px 16px;
+  background: #FFF8F0;
+  display: grid;
+  grid-template-columns: 38px 1fr 96px 18px 96px 1fr;
+  align-items: center;
+  border-bottom: 1px solid #F5E8D8;
+  gap: 4px;
+}
+.gua-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.gua-bar-item .label {
+  font-size: 10px;
+  color: #A1887F;
+  letter-spacing: 1px;
+}
+.gua-bar-item .value {
+  font-family: "STKaiti", "KaiTi", "STSong", serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #C41E3A;
+  letter-spacing: 1px;
+}
+.gua-bar-item .sub {
+  font-size: 10px;
+  color: #8D6E63;
+  font-family: "STKaiti", "KaiTi", serif;
+}
+.gua-bar-arrow {
+  font-size: 20px;
+  color: #C41E3A;
+  font-weight: bold;
+}
+
+/* 六爻主体 */
+.paipan-hex {
+  padding: 10px 12px 12px;
+  background: #FFFCF8;
+}
+.paipan-hex-row {
+  display: grid;
+  grid-template-columns: 38px 1fr 96px 18px 96px 1fr;
+  align-items: center;
+  padding: 6px 4px;
+  border-bottom: 1px dotted #F0E4D4;
+  font-size: 12px;
+  gap: 4px;
+  min-height: 30px;
+}
+.paipan-hex-row:last-child { border-bottom: none; }
+.paipan-hex-row.is-changing {
+  background: linear-gradient(90deg, rgba(196, 30, 58, 0.08) 0%, transparent 80%);
+  border-left: 2px solid #C41E3A;
+  padding-left: 4px;
+}
+.paipan-hex-row .col-shensha {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  padding-left: 2px;
+}
+.paipan-hex-row .col-fushen {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 13px;
+  color: #4E342E;
+  text-align: left;
+  padding-left: 4px;
+}
+.paipan-hex-row .col-yao {
+  text-align: center;
+  white-space: nowrap;
+  position: relative;
+}
+.paipan-hex-row .yao-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  letter-spacing: normal;
+}
+.paipan-hex-row .yao-symbol {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  width: 56px;
+  height: 4px;
+  border-radius: 2px;
+}
+.yao-yang { background: #C41E3A; justify-content: center; }
+.yao-yin {
+  background: transparent;
+  justify-content: space-between;
+  gap: 8px;
+}
+.yao-yin .yao-segment {
+  flex: 1;
+  height: 4px;
+  background: #5D4037;
+  border-radius: 2px;
+}
+.yao-changing-mark {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  line-height: 12px;
+  background: #FFEBEE;
+  border: 1.5px solid #C62828;
+  border-radius: 50%;
+  color: #C62828;
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+  vertical-align: middle;
+}
+.marker-shi {
+  display: inline-block;
+  color: #C41E3A;
+  font-weight: bold;
+  background: #FFE5E5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid #F8BBD0;
+  vertical-align: middle;
+}
+.marker-ying {
+  display: inline-block;
+  color: #1565C0;
+  font-weight: bold;
+  background: #E3F2FD;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid #90CAF9;
+  vertical-align: middle;
+}
+.paipan-hex-row .col-arrow {
+  text-align: center;
+  color: #C41E3A;
+  font-size: 13px;
+  font-weight: bold;
+}
+.paipan-hex-row .col-bian-info {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 13px;
+  color: #4E342E;
+  text-align: right;
+  padding-right: 4px;
+}
+.paipan-hex-row .col-bian-info.text-muted {
+  color: #D7CCC8;
+}
+
 /* 卦象结果在消息中的样式 */
 .divination-result {
   margin-top: 12px;
@@ -713,6 +1003,187 @@ let isFollowUpMode = false;
 let lastPanData = null;
 let lastReading = '';
 let lastQuestion = '';
+let llmConfigured = true;  // 启动时通过 /api/health 检测
+
+// ========== 五行映射 + 神煞颜色 ==========
+const ZHI_WX = {
+  子: "水", 亥: "水",
+  寅: "木", 卯: "木",
+  巳: "火", 午: "火",
+  申: "金", 酉: "金",
+  辰: "土", 戌: "土", 丑: "土", 未: "土"
+};
+const GAN_WX = {
+  甲: "木", 乙: "木",
+  丙: "火", 丁: "火",
+  戊: "土", 己: "土",
+  庚: "金", 辛: "金",
+  壬: "水", 癸: "水"
+};
+const LIUSHEN_COLOR_CLASS = {
+  青龙: "shensha-青龙",
+  朱雀: "shensha-朱雀",
+  勾陈: "shensha-勾陈",
+  螣蛇: "shensha-螣蛇",
+  白虎: "shensha-白虎",
+  玄武: "shensha-玄武"
+};
+const SHENSHA_ORDER = ['文昌', '驿马', '将星', '桃花', '天喜', '天医', '谋星', '华盖', '灾煞', '劫煞', '禄神', '阳刃', '贵人'];
+
+// 渲染四柱单个字位
+function renderSizhuCell(label, ganzhi) {
+  const gan = ganzhi[0];
+  const zhi = ganzhi[1];
+  const wx = GAN_WX[gan] || '木';
+  return `
+    <div class="sizhu-cell">
+      <div class="ganzhi-pair">
+        <span class="gan gan-${wx}">${gan}</span>
+        <span class="zhi">${zhi}</span>
+      </div>
+      <div class="label">${label}</div>
+    </div>
+  `;
+}
+
+// 渲染单个爻画
+function makeYaoHtml(isYang, withChangingMark) {
+  const inner = isYang ? '' : '<span class="yao-segment"></span><span class="yao-segment"></span>';
+  return `<span class="yao-symbol ${isYang ? 'yao-yang' : 'yao-yin'}">${inner}</span>`
+    + (withChangingMark ? '<span class="yao-changing-mark" title="动爻">○</span>' : '');
+}
+
+// 渲染完整的可视化排盘卡片
+function renderPaipan(pan) {
+  if (!pan || !pan.lines) return '';
+  const sizhu = pan.sizhu;
+  const gua = pan.gua;
+  const benGua = gua.ben;
+  const bianGua = gua.bian;
+  const dongYaoList = gua.dong_yao_list || [];
+
+  // 变卦 line map（按 position）
+  const bianMap = {};
+  if (bianGua && bianGua.lines) {
+    bianGua.lines.forEach(l => { bianMap[l.position] = l; });
+  }
+
+  // 本卦 6 行，按 position 6→1 排序显示（上爻到初爻）
+  const lines = [...pan.lines].sort((a, b) => b.position - a.position);
+
+  // 神煞
+  const shenshaHtml = SHENSHA_ORDER
+    .filter(k => pan.shensha && pan.shensha[k])
+    .map(k => {
+      const cls = LIUSHEN_COLOR_CLASS[k] || '';
+      return `<div class="shensha-item"><span class="shensha-label">${k}</span><span class="shensha-value ${cls}">${pan.shensha[k]}</span></div>`;
+    })
+    .join('');
+
+  // 6 行六爻
+  const hexHtml = lines.map(line => {
+    const pos = line.position;
+    const isYang = line.value === 1;
+    const isChanging = line.changing;
+    const isShi = line.is_shi;
+    const isYing = line.is_ying;
+    const liushen = line.liushen || '';
+    const liushenCls = LIUSHEN_COLOR_CLASS[liushen] || '';
+    const liuqin = line.liuqin || '';
+    const zhi = line.zhi || '';
+    const wx = ZHI_WX[zhi] || '';
+
+    // 本卦爻画
+    const benYaoHtml = makeYaoHtml(isYang, isChanging);
+
+    // 世应标记
+    let markerHtml = '';
+    if (isShi) markerHtml = '<span class="marker-shi" title="世爻">世</span>';
+    else if (isYing) markerHtml = '<span class="marker-ying" title="应爻">应</span>';
+
+    // 变卦爻：只有变爻才动、才变化，静爻保持与本卦一致
+    const bianLine = bianMap[pos];
+    let bianYaoHtml, bianInfoHtml, bianInfoCls = '';
+    if (isChanging && bianLine) {
+      const bianIsYang = !isYang;
+      bianYaoHtml = makeYaoHtml(bianIsYang, false);
+      const bianZhi = bianLine.zhi || '';
+      const bianWx = ZHI_WX[bianZhi] || '';
+      bianInfoHtml = `${bianLine.liuqin || ''}${bianZhi}${bianWx}`;
+    } else {
+      bianYaoHtml = makeYaoHtml(isYang, false);
+      bianInfoHtml = `${liuqin}${zhi}${wx}`;
+      bianInfoCls = 'text-muted';
+    }
+
+    const rowCls = [
+      isChanging ? 'is-changing' : ''
+    ].filter(Boolean).join(' ');
+
+    return `
+      <div class="paipan-hex-row ${rowCls}">
+        <div class="col-shensha ${liushenCls}">${liushen}</div>
+        <div class="col-fushen">${liuqin}${zhi}${wx}</div>
+        <div class="col-yao"><span class="yao-wrapper">${benYaoHtml}${markerHtml}</span></div>
+        <div class="col-arrow">${isChanging ? '→' : ''}</div>
+        <div class="col-yao"><span class="yao-wrapper">${bianYaoHtml}</span></div>
+        <div class="col-bian-info ${bianInfoCls}">${bianInfoHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  // 宫位描述（本卦 + 变卦）
+  const benSub = `${benGua.palace}宫 · 五行属${benGua.palace_wx}`;
+  const dongSub = dongYaoList.length ? `第${dongYaoList.join('、')}爻动` : '无动爻';
+  const bianSub = bianGua
+    ? dongSub
+    : '静卦 · 无动爻';
+
+  return `
+    <div class="paipan-card">
+      <div class="paipan-time">
+        <span class="solar">📅 ${escapeHtml(pan.datetime.solar)}</span>
+        <span class="lunar">农历 ${escapeHtml(pan.datetime.lunar)}</span>
+        <span class="jieqi">${escapeHtml(pan.jieqi.current)}</span>
+      </div>
+
+      <div class="paipan-sizhu">
+        ${renderSizhuCell('年柱', sizhu.year)}
+        ${renderSizhuCell('月柱', sizhu.month)}
+        ${renderSizhuCell('日柱', sizhu.day)}
+        ${renderSizhuCell('时柱', sizhu.hour)}
+      </div>
+
+      <div class="paipan-xunkong">
+        <div class="xk-item"><span class="label">日空</span><span class="value">${escapeHtml(pan.xunkong.day)}</span></div>
+        <div class="xk-item"><span class="label">时空</span><span class="value">${escapeHtml(pan.xunkong.hour)}</span></div>
+        <div class="xk-item"><span class="label">月建</span><span class="value">${escapeHtml(pan.yuejian)}月</span></div>
+      </div>
+
+      <div class="paipan-shensha">
+        ${shenshaHtml}
+      </div>
+
+      <div class="paipan-gua-bar">
+        <div class="gua-bar-item" style="grid-column: 3;">
+          <span class="label">本 卦</span>
+          <span class="value">${escapeHtml(benGua.name)}</span>
+          <span class="sub">${escapeHtml(benSub)}</span>
+        </div>
+        <div class="gua-bar-arrow" style="grid-column: 4;">→</div>
+        <div class="gua-bar-item" style="grid-column: 5;">
+          <span class="label">变 卦</span>
+          <span class="value">${bianGua ? escapeHtml(bianGua.name) : '静卦'}</span>
+          <span class="sub">${escapeHtml(bianSub)}</span>
+        </div>
+      </div>
+
+      <div class="paipan-hex">
+        ${hexHtml}
+      </div>
+    </div>
+  `;
+}
 
 // ========== 模式切换 ==========
 function activateMode(mode) {
@@ -722,6 +1193,10 @@ function activateMode(mode) {
 
 // ========== 新占卜 ==========
 function startNewDivination() {
+  if (!llmConfigured) {
+    addSystemMsg('⚠️ AI 模型密钥未配置，无法进行占卜。\n请管理员设置 DEEPSEEK_API_KEY 环境变量并重启服务。');
+    return;
+  }
   isFollowUpMode = false;
   hideWelcome();
   chatInputArea.style.display = 'block';
@@ -745,13 +1220,16 @@ function startFollowUp() {
   userInput.value = '';
   userInput.focus();
   btnSend.disabled = true;
-  btnZhan.disabled = true;
 }
 
 // ========== 发送 ==========
 async function sendDivination() {
   const text = userInput.value.trim();
   if (!text || isLoading) return;
+  if (!llmConfigured && !isFollowUpMode) {
+    addSystemMsg('⚠️ AI 模型密钥未配置，无法进行占卜。');
+    return;
+  }
 
   // 用户消息
   const userMsg = isFollowUpMode
@@ -849,7 +1327,7 @@ function addSystemMsg(text) {
   const el = document.createElement('div');
   el.className = 'message bot';
   el.innerHTML = `
-    <div class="msg-bubble" style="color:var(--text-dim);font-size:13px;">${escapeHtml(text)}</div>
+    <div class="msg-bubble" style="color:var(--text-dim);font-size:13px;">${escapeHtml(text).replace(/\n/g, '<br>')}</div>
   `;
   chatMessages.appendChild(el);
   scrollToBottom();
@@ -887,29 +1365,10 @@ function renderBotResponse(data, label) {
     const pan = data.pan;
     const benGua = pan.gua.ben.name;
     const bianGua = pan.gua.bian ? pan.gua.bian.name : '静卦';
-    const dongYao = pan.gua.dong_yao;
-    const sizhu = pan.sizhu;
 
     html += `
       <div style="font-weight:600;color:var(--red);font-size:15px;margin-bottom:10px;">🔮 ${label}</div>
-      <div class="pan-info">
-        <div class="pan-info-item">
-          <div class="label">起卦时间</div>
-          <div class="value">${pan.datetime.solar}</div>
-        </div>
-        <div class="pan-info-item">
-          <div class="label">农历</div>
-          <div class="value">${pan.datetime.lunar}</div>
-        </div>
-        <div class="pan-info-item">
-          <div class="label">本卦</div>
-          <div class="value" style="color:var(--red);font-family:STSong,SimSun,serif;font-size:16px;">${benGua}</div>
-        </div>
-        <div class="pan-info-item">
-          <div class="label">变卦/动爻</div>
-          <div class="value">${bianGua}${dongYao ? ' · 第'+dongYao+'爻动' : ''}</div>
-        </div>
-      </div>
+      ${renderPaipan(pan)}
       <div class="divination-result">
         ${formatReading(data.reading)}
       </div>
@@ -937,8 +1396,40 @@ function renderBotResponse(data, label) {
   scrollToBottom();
 }
 
+function stripPaiPanTemplate(text) {
+  // 过滤 AI 输出中可能混入的排盘模板（前端已用可视化卡片渲染排盘，不需要文本形式的排盘）
+
+  // 1. 去掉 ``` 包裹的排盘代码块（含制表符或爻位）
+  text = text.replace(/```[\s\S]*?```/g, (match) => {
+    if (/[┌└├─│┐┘┤]/.test(match) || /上爻|五爻|四爻|三爻|二爻|初爻/.test(match)) {
+      return '';
+    }
+    return match;
+  });
+
+  // 2. 从第一个【章节标题开始保留（排盘模板不会以【开头）
+  const firstHeader = text.search(/【/);
+  if (firstHeader > 0) {
+    text = text.substring(firstHeader);
+  }
+
+  // 3. 删除残留的制表符行
+  text = text.split('\n').filter(line => {
+    return !/[┌└├─│┐┘┤]/.test(line);
+  }).join('\n');
+
+  // 4. 合并多余空行
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  return text.trim();
+}
+
 function formatReading(text) {
-  // 古籍引用：原文格式处理
+  // 过滤掉 AI 可能混入的排盘模板文本
+  text = stripPaiPanTemplate(text);
+  // 先转义已有 HTML，防止 LLM 输出中被注入恶意代码
+  text = escapeHtml(text);
+  // 古籍引用：原文格式处理（使用转义后的字符）
   text = text.replace(/「([^」]+)」[—–-]+[《]([^》]+)[》]/g,
     '<blockquote>「$1」<cite>——《$2》</cite></blockquote>');
   // 章节标题
@@ -947,7 +1438,8 @@ function formatReading(text) {
   text = text.replace(/本卦[：:]\s*(.+?)(?=[，,\n<]|$)/g, '本卦：<span class="gua-highlight">$1</span>');
   // 换行
   text = text.replace(/\n/g, '<br>');
-  // strong
+  // strong（在转义后的 &lt; 和 &gt; 基础上就已不存在 **，需在转义前处理）
+  // 注意：escapeHtml 已经把 < 转成了 &lt;，但 ** 不受影响
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   return text;
 }
@@ -967,24 +1459,25 @@ async function shareDivination(question, benGua, bianGua, solar, lunar) {
       <div class="share-meta">
         <div class="share-meta-item">
           <div class="meta-label">公历</div>
-          <div class="meta-value">${solar}</div>
+          <div class="meta-value">${escapeHtml(solar)}</div>
         </div>
         <div class="share-meta-item">
           <div class="meta-label">农历</div>
-          <div class="meta-value">${lunar}</div>
+          <div class="meta-value">${escapeHtml(lunar)}</div>
         </div>
         <div class="share-meta-item">
           <div class="meta-label">本卦 → 变卦</div>
-          <div class="meta-value">${benGua} → ${bianGua}</div>
+          <div class="meta-value">${escapeHtml(benGua)} → ${escapeHtml(bianGua)}</div>
         </div>
       </div>
+      ${lastPanData ? renderPaipan(lastPanData) : ''}
       <div class="share-section">
         <h3>所占之事</h3>
-        <p>${question}</p>
+        <p>${escapeHtml(question)}</p>
       </div>
       <div class="share-section">
-        <h3>占卜分析</h3>
-        <div style="font-size:13px;line-height:2;color:#444;">${reading}</div>
+        <h3>大白话</h3>
+        <div style="font-size:13px;line-height:2;color:#444;">${escapeHtml(reading).replace(/\n/g, '<br>')}</div>
       </div>
       <div class="share-footer">
         以上内容由AI生成 · 仅供娱乐参考
@@ -1019,27 +1512,20 @@ async function shareDivination(question, benGua, bianGua, solar, lunar) {
 }
 
 function extractShareContent(reading) {
-  // 提取核心分析内容，去掉排盘表格
+  // 只提取【大白话】部分
   let content = reading;
 
-  // 移除纯文本排盘部分
-  const sections = ['【卦象总览】', '【核心判断】', '【古籍依据】', '【知识库参照】', '【详细分析】', '【给你的建议】', '【大白话】'];
-  let extracted = '';
-  for (const s of sections) {
-    const idx = content.indexOf(s);
-    if (idx >= 0) {
-      let end = content.length;
-      for (const ns of sections) {
-        const nidx = content.indexOf(ns, idx + s.length);
-        if (nidx > 0 && nidx < end) end = nidx;
-      }
-      extracted += content.substring(idx, end).trim() + '<br><br>';
-    }
+  const keyword = '【大白话】';
+  const idx = content.indexOf(keyword);
+  if (idx >= 0) {
+    // 去掉标题本身，取后面的内容
+    let extracted = content.substring(idx + keyword.length).trim();
+    // 清理末尾标记
+    extracted = extracted.replace(/---.*$/s, '');
+    return extracted;
   }
-
-  // 清理末尾标记
-  extracted = extracted.replace(/---.*$/s, '');
-  return extracted || reading.substring(0, 800);
+  // 如果找不到大白话，返回原文前800字
+  return reading.substring(0, 800);
 }
 
 // ========== 工具函数 ==========
@@ -1086,7 +1572,31 @@ userInput.addEventListener('input', () => {
 });
 
 // ========== 初始化 ==========
-userInput.focus();
+async function init() {
+  // 检测后端 LLM 是否已配置
+  try {
+    const resp = await fetch(`${API_BASE}/api/health`);
+    const health = await resp.json();
+    llmConfigured = health.llm_configured;
+    if (!llmConfigured) {
+      addSystemMsg('⚠️ 后端未配置 AI 模型密钥（DEEPSEEK_API_KEY），占卜功能暂时不可用。\n请管理员设置环境变量后重启服务。');
+      btnZhan.disabled = true;
+    }
+  } catch (e) {
+    // 后端未启动，忽略（后续 API 调用会报错）
+  }
+  userInput.focus();
+}
+
+function showKeyWarning() {
+  if (!llmConfigured) {
+    addSystemMsg('⚠️ AI 模型未配置，无法占卜。请设置 DEEPSEEK_API_KEY 环境变量后重启服务。');
+    return true;
+  }
+  return false;
+}
+
+init();
 </script>
 
 </body>
