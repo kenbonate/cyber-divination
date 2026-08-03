@@ -49,66 +49,7 @@ body {
   font-weight: normal;
   color: var(--gold);
 }
-.header .btn-settings {
-  position: absolute;
-  right: 16px;
-  background: none;
-  border: 1px solid rgba(232,213,196,0.3);
-  color: var(--gold-light);
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 16px;
-}
 
-/* 设置面板 */
-.settings-overlay {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-}
-.settings-overlay.show { display: flex; }
-.settings-panel {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  width: 90%;
-  max-width: 400px;
-}
-.settings-panel h3 { font-size: 18px; margin-bottom: 16px; color: #2c1810; }
-.settings-panel label { font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 6px; }
-.settings-panel input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 14px;
-  margin-bottom: 16px;
-  outline: none;
-  background: #faf8f5;
-}
-.settings-panel input:focus { border-color: var(--gold); }
-.settings-panel .hint { font-size: 11px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.6; }
-.settings-panel .btn-row { display: flex; gap: 10px; justify-content: flex-end; }
-.settings-panel button {
-  padding: 8px 20px;
-  border-radius: 10px;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-}
-.settings-panel .btn-save {
-  background: linear-gradient(135deg, #4a2c1a, #2c1810);
-  color: var(--gold);
-}
-.settings-panel .btn-cancel {
-  background: #f0ece4;
-  color: var(--text-dim);
-}
 
 /* 状态条 */
 .status-bar {
@@ -245,9 +186,6 @@ body {
 .welcome { text-align: center; padding: 40px 20px; color: var(--text-dim); }
 .welcome h2 { font-family: "STSong", serif; color: var(--gold); font-size: 20px; margin-bottom: 10px; letter-spacing: 4px; }
 
-.setup-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 14px 16px; margin: 12px; font-size: 13px; color: #664d03; text-align: center; line-height: 1.6; }
-.setup-banner a { color: #0d6efd; cursor: pointer; text-decoration: underline; }
-
 @media (max-width: 480px) {
   .sizhu-row { gap: 10px; }
   .sizhu-value { font-size: 18px; }
@@ -262,32 +200,12 @@ body {
 
 <div class="header">
   <h1>赛 博 占 卜</h1>
-  <button class="btn-settings" onclick="toggleSettings()" title="设置后端地址">⚙</button>
 </div>
 
 <!-- 状态条 -->
 <div id="statusBar" class="status-bar">
   <span class="status-dot" id="statusDot"></span>
   <span id="statusText">检查连接...</span>
-</div>
-
-<!-- 设置面板 -->
-<div class="settings-overlay" id="settingsOverlay">
-  <div class="settings-panel">
-    <h3>🔗 后端地址设置</h3>
-    <label>API 地址</label>
-    <input type="text" id="apiUrlInput" placeholder="例如 https://xxx.onrender.com">
-    <div class="hint">
-      💡 部署指南：<br>
-      1. 将后端部署到 <b>Render.com</b>（免费）<br>
-      2. 获得地址如 <code>https://赛博占卜.onrender.com</code><br>
-      3. 填入上方并保存
-    </div>
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="toggleSettings()">取消</button>
-      <button class="btn-save" onclick="saveSettings()">保存</button>
-    </div>
-  </div>
 </div>
 
 <div class="container" id="mainContainer">
@@ -306,8 +224,8 @@ body {
 </div>
 
 <script>
-// API 地址——优先 localStorage，否则使用默认 Render 后端
-let API_BASE = localStorage.getItem('cyber_div_api') || 'https://cyber-divination.onrender.com';
+// API 地址
+const API_BASE = 'https://cyber-divination.onrender.com';
 const container = document.getElementById('mainContainer');
 const userInput = document.getElementById('userInput');
 const btnSend = document.getElementById('btnSend');
@@ -318,7 +236,7 @@ async function checkConnection() {
   const dot = document.getElementById('statusDot');
   const text = document.getElementById('statusText');
   try {
-    const resp = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
+    const resp = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(5000) });
     if (resp.ok) {
       dot.className = 'status-dot status-online';
       text.textContent = '后端已连接';
@@ -326,35 +244,8 @@ async function checkConnection() {
     }
   } catch (e) {}
   dot.className = 'status-dot status-offline';
-  text.textContent = API_BASE ? '后端无法连接' : '未配置后端 — 点击 ⚙ 设置';
+  text.textContent = '后端连接中...';
   return false;
-}
-
-// 设置面板
-function toggleSettings() {
-  const overlay = document.getElementById('settingsOverlay');
-  const input = document.getElementById('apiUrlInput');
-  input.value = API_BASE;
-  overlay.classList.toggle('show');
-}
-
-function saveSettings() {
-  const url = document.getElementById('apiUrlInput').value.trim().replace(/\/$/, '');
-  API_BASE = url;
-  localStorage.setItem('cyber_div_api', url);
-  document.getElementById('settingsOverlay').classList.remove('show');
-  checkConnection();
-}
-
-// 显示设置提示
-function showSetupBanner() {
-  const existing = document.getElementById('setupBanner');
-  if (existing) return;
-  const banner = document.createElement('div');
-  banner.id = 'setupBanner';
-  banner.className = 'setup-banner';
-  banner.innerHTML = '⚠️ 尚未配置后端地址，请点击右上角 <b>⚙</b> 设置<br><a onclick="toggleSettings()">点击此处设置</a>';
-  container.insertBefore(banner, container.firstChild);
 }
 
 userInput.addEventListener('input', () => {
@@ -377,12 +268,6 @@ async function sendMessage() {
   const text = userInput.value.trim();
   if (!text || isLoading) return;
 
-  if (!API_BASE) {
-    showSetupBanner();
-    toggleSettings();
-    return;
-  }
-
   userInput.value = '';
   userInput.style.height = 'auto';
   btnSend.disabled = true;
@@ -390,9 +275,6 @@ async function sendMessage() {
 
   const welcome = document.getElementById('welcome');
   if (welcome) welcome.style.display = 'none';
-
-  const banner = document.getElementById('setupBanner');
-  if (banner) banner.remove();
 
   const loadingId = 'loading-' + Date.now();
   const loadingDiv = document.createElement('div');
@@ -546,7 +428,6 @@ function scrollToBottom() {
 }
 
 // 初始化
-if (!API_BASE) showSetupBanner();
 checkConnection();
 userInput.focus();
 </script>
