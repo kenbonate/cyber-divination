@@ -24,9 +24,8 @@ from divination_prompt import SYSTEM_PROMPT, build_messages, build_followup_mess
 # 配置
 # ==========================================
 DB_PATH = os.environ.get("VECTORDB_PATH", os.path.join(os.path.dirname(__file__), "..", "kb_preprocess", "vectordb"))
-LLM_API_KEY = os.environ["DEEPSEEK_API_KEY"]  # 必须通过环境变量设置
+LLM_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")  # 通过环境变量设置
 LLM_API_URL = "https://api.deepseek.com/v1/chat/completions"
-LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek-chat")
 LLM_MODEL = "deepseek-chat"  # DeepSeek-V3
 
 # 备用：阿里云百炼
@@ -108,6 +107,9 @@ def call_llm(messages: list[dict]) -> str:
     """调用 LLM API"""
     import requests
     
+    if not LLM_API_KEY:
+        raise Exception("未配置 DEEPSEEK_API_KEY 环境变量，请设置后重试")
+
     headers = {
         "Authorization": f"Bearer {LLM_API_KEY}",
         "Content-Type": "application/json",
@@ -309,7 +311,11 @@ class FollowUpResponse(BaseModel):
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "vectors": retriever.collection.count() if retriever else 0}
+    return {
+        "status": "ok",
+        "vectors": retriever.collection.count() if retriever else 0,
+        "llm_configured": bool(LLM_API_KEY),
+    }
 
 
 @app.post("/api/divination", response_model=DivinationResponse)
